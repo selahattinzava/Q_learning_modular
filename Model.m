@@ -6,9 +6,6 @@ classdef Model < handle
     end
     
     methods
-        function obj = Model(initialPose)
-            obj.currentPose = initialPose; % [x, y]
-        end
 
         function move(obj,action) 
 

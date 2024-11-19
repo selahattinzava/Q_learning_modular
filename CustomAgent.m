@@ -6,9 +6,8 @@ classdef CustomAgent < handle
 
     methods
         function obj = CustomAgent()
-            obj.AgentOptions = rlQAgentOptions(...
-                'EpsilonGreedyExploration', struct('Epsilon', 0.9), ...
-                'DiscountFactor', 0.99);
+            epsilonGreedy = rl.option.EpsilonGreedyExploration("Epsilon", 0.9);
+            obj.AgentOptions = rlQAgentOptions('EpsilonGreedyExploration', epsilonGreedy,'DiscountFactor', 0.99);
 
             obj.TrainingOptions = rlTrainingOptions(...
                 'MaxEpisodes', 400, ...
@@ -19,17 +18,17 @@ classdef CustomAgent < handle
         end
 
 
-        function trainingStats = train(agent, env, net)
-            maxEpisodes = agent.TrainingOptions.MaxEpisodes;
-            maxSteps = agent.TrainingOptions.MaxStepsPerEpisode;
-            epsilon = agent.AgentOptions.EpsilonGreedyExploration.Epsilon;
+        function trainingStats = train(obj,env, net)
+            maxEpisodes = obj.TrainingOptions.MaxEpisodes;
+            maxSteps = obj.TrainingOptions.MaxStepsPerEpisode;
+            epsilon = obj.AgentOptions.EpsilonGreedyExploration.Epsilon;
             alpha = 0.1;
-            gamma = agent.AgentOptions.DiscountFactor;
+            gamma = obj.AgentOptions.DiscountFactor;
         
             trainingStats = struct('EpisodeReward', zeros(maxEpisodes, 1));
         
             for episode = 1:maxEpisodes
-                state = reset(env);
+                state = env.reset();
                 isDone = false;
                 totalReward = 0;
         
@@ -39,7 +38,7 @@ classdef CustomAgent < handle
                     end
                     
                     action = net.selectAction(state, epsilon);
-                    [nextState, reward, isDone, ~] = step(env, action);
+                    [nextState, reward, isDone] = env.step(action);
                     net.updateQTable(state, action, reward, nextState, alpha, gamma);
                     state = nextState;
                     totalReward = totalReward + reward;
