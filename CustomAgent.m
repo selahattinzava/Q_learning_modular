@@ -1,53 +1,37 @@
 classdef CustomAgent < handle
     properties
+        env
+        net
+        agent
         AgentOptions
         TrainingOptions
+        trainingStats
     end
 
     methods
-        function obj = CustomAgent()
-            epsilonGreedy = rl.option.EpsilonGreedyExploration("Epsilon", 0.9);
-            obj.AgentOptions = rlQAgentOptions('EpsilonGreedyExploration', epsilonGreedy,'DiscountFactor', 0.99);
+        function obj = CustomAgent(env, net)
+            obj.env = env;
+            obj.net = net;
 
-            obj.TrainingOptions = rlTrainingOptions(...
-                'MaxEpisodes', 400, ...
-                'MaxStepsPerEpisode', 50, ...
-                'StopTrainingCriteria', "AverageReward", ...
-                'StopTrainingValue', 10, ...
-                'ScoreAveragingWindowLength', 10);
+            AgentOptions = rlQAgentOptions;
+            AgentOptions.DiscountFactor = 1;
+            AgentOptions.EpsilonGreedyExploration.Epsilon = 0.9;
+            AgentOptions.CriticOptimizerOptions.LearnRate = 0.01;
+            obj.agent = rlQAgent(obj.net.Critic, AgentOptions);
+
+            obj.TrainingOptions = rlTrainingOptions;
+            obj.TrainingOptions.MaxStepsPerEpisode = 50;
+            obj.TrainingOptions.MaxEpisodes = 500;
+            obj.TrainingOptions.StopTrainingCriteria = "None";
+            obj.TrainingOptions.StopTrainingValue = "None";
+            obj.TrainingOptions.ScoreAveragingWindowLength = 30;
         end
 
+        function train(obj)
 
-        function trainingStats = train(obj,env, net)
-            maxEpisodes = obj.TrainingOptions.MaxEpisodes;
-            maxSteps = obj.TrainingOptions.MaxStepsPerEpisode;
-            epsilon = obj.AgentOptions.EpsilonGreedyExploration.Epsilon;
-            alpha = 0.1;
-            gamma = obj.AgentOptions.DiscountFactor;
-        
-            trainingStats = struct('EpisodeReward', zeros(maxEpisodes, 1));
-        
-            for episode = 1:maxEpisodes
-                state = env.reset();
-                isDone = false;
-                totalReward = 0;
-        
-                for step = 1:maxSteps
-                    if isDone 
-                        break; 
-                    end
-                    
-                    action = net.selectAction(state, epsilon);
-                    [nextState, reward, isDone] = env.step(action);
-                    net.updateQTable(state, action, reward, nextState, alpha, gamma);
-                    state = nextState;
-                    totalReward = totalReward + reward;
-                end
-        
-                trainingStats.EpisodeReward(episode) = totalReward;
-                disp(['Episode ', num2str(episode), ': Total Reward = ', num2str(totalReward)]);
-            end
+            obj.trainingStats = train(obj.agent, obj.env, obj.TrainingOptions);
         end
+
     end
 end
 
